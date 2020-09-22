@@ -1,0 +1,474 @@
+[gd_scene load_steps=26 format=2]
+
+[ext_resource path="res://assets/textures/robot_demo.png" type="Texture" id=1]
+[ext_resource path="res://assets/textures/scroll_bg_fg_1.png" type="Texture" id=2]
+[ext_resource path="res://assets/textures/scroll_bg_cloud_1.png" type="Texture" id=3]
+
+[sub_resource type="GDScript" id=1]
+script/source = "extends KinematicBody2D
+
+const HALT_SPEED = 0.325
+const MAX_SPEED = 750.0
+
+const GRAVITY = 1200.0
+const MAX_JUMP = 725.0
+const MAX_JUMP_TIME = 1.5
+const MAX_JUMP_FORGIVENESS_TIME = 0.5
+
+var jump_time = 0.0
+var jump_accel = 0.0
+var jump_forgiveness_time = 0.0
+var jump_force = Vector2.ZERO
+
+var direction = Vector2.ZERO
+var direction_input = Vector2.ZERO
+
+func _ready():
+	$AnimationTree.active = true
+
+func _process(delta):
+	direction_input = Vector2.ZERO
+	
+	if Input.is_key_pressed(KEY_A):
+		direction_input.x = -1
+		$Sprite.flip_h = true
+	if Input.is_key_pressed(KEY_D):
+		direction_input.x = 1
+		$Sprite.flip_h = false
+		
+	if jump_time <= MAX_JUMP_TIME or jump_forgiveness_time <= MAX_JUMP_FORGIVENESS_TIME:
+		if Input.is_action_just_pressed(\"ui_select\"):
+			jump_accel = -MAX_JUMP
+		
+		if Input.is_action_pressed(\"ui_select\"):
+			jump_accel -= MAX_JUMP * delta
+			jump_force.y = jump_accel
+			$AnimationTree.set(\"parameters/in_air/current\", 1)
+			
+	if Input.is_action_just_released(\"ui_select\"):
+		$AnimationTree.set(\"parameters/in_air/current\", 0)
+	
+	if direction_input == Vector2.ZERO:
+		direction = direction.linear_interpolate(Vector2.ZERO, delta / HALT_SPEED)
+	else:
+		direction = direction.linear_interpolate(direction_input * MAX_SPEED, delta)
+		
+	move_and_slide(direction + jump_force, Vector2.UP)
+	
+	if is_on_floor():
+		jump_accel = 0.0
+		jump_force.y = 0.0
+		jump_forgiveness_time = 0.0
+		$AnimationTree.set(\"parameters/movement/current\", int(direction.length() > 50))
+	else:
+		if !Input.is_action_pressed(\"ui_select\"):
+			jump_time = MAX_JUMP_TIME + 1
+		else:
+			jump_forgiveness_time = MAX_JUMP_FORGIVENESS_TIME + 1
+		jump_time += delta
+		jump_forgiveness_time += delta
+		jump_force.y += GRAVITY * delta
+	
+	if is_on_floor() or (jump_forgiveness_time <= MAX_JUMP_FORGIVENESS_TIME):
+		jump_time = 0.0
+		
+	$AnimationTree.set(\"parameters/movement_time/scale\", 1 + abs(direction.x)/100)
+	$AnimationTree.set(\"parameters/in_air_state/current\", int(!$RayCast2D.is_colliding()))
+"
+
+[sub_resource type="Animation" id=2]
+length = 0.01
+loop = true
+step = 0.25
+tracks/0/type = "value"
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ 22 ]
+}
+
+[sub_resource type="Animation" id=3]
+length = 0.01
+loop = true
+step = 0.25
+tracks/0/type = "value"
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ 21 ]
+}
+
+[sub_resource type="Animation" id=4]
+length = 0.5
+loop = true
+step = 0.25
+tracks/0/type = "value"
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ 26 ]
+}
+
+[sub_resource type="Animation" id=5]
+length = 7.0
+loop = true
+step = 0.25
+tracks/0/type = "value"
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 1.25, 1.5, 2, 4.5, 4.75, 5, 5.25 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1, 1, 1, 1 ),
+"update": 1,
+"values": [ 16, 17, 18, 16, 19, 20, 19, 16 ]
+}
+
+[sub_resource type="Animation" id=6]
+length = 0.5
+loop = true
+step = 0.25
+tracks/0/type = "value"
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ 25 ]
+}
+
+[sub_resource type="Animation" id=7]
+length = 0.5
+loop = true
+step = 0.25
+tracks/0/type = "value"
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.25, 0.5 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 1,
+"values": [ 23, 24, 23 ]
+}
+
+[sub_resource type="Animation" id=8]
+length = 0.5
+loop = true
+step = 0.25
+tracks/0/type = "value"
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ 26 ]
+}
+
+[sub_resource type="Animation" id=9]
+length = 1.25
+loop = true
+step = 0.25
+tracks/0/type = "value"
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.25, 0.5, 0.75, 1, 1.25 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1, 1 ),
+"update": 1,
+"values": [ 0, 1, 2, 3, 4, 0 ]
+}
+
+[sub_resource type="Animation" id=10]
+length = 1.25
+loop = true
+step = 0.25
+tracks/0/type = "value"
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.25, 0.5, 0.75, 1, 1.25 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1, 1 ),
+"update": 1,
+"values": [ 5, 6, 7, 8, 9, 5 ]
+}
+
+[sub_resource type="Animation" id=11]
+length = 1.25
+loop = true
+step = 0.25
+tracks/0/type = "value"
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.25, 0.5, 0.75, 1, 1.25 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1, 1 ),
+"update": 1,
+"values": [ 10, 11, 12, 13, 14, 5 ]
+}
+
+[sub_resource type="CapsuleShape2D" id=12]
+radius = 9.2044
+height = 8.73317
+
+[sub_resource type="AnimationNodeAnimation" id=13]
+animation = "run"
+
+[sub_resource type="AnimationNodeAnimation" id=14]
+animation = "falling"
+
+[sub_resource type="AnimationNodeAnimation" id=15]
+animation = "jumping"
+
+[sub_resource type="AnimationNodeAnimation" id=16]
+animation = "idle"
+
+[sub_resource type="AnimationNodeTransition" id=17]
+input_count = 2
+input_0/name = "falling"
+input_0/auto_advance = false
+input_1/name = "jumping"
+input_1/auto_advance = false
+
+[sub_resource type="AnimationNodeTransition" id=18]
+input_count = 2
+input_0/name = "ground"
+input_0/auto_advance = false
+input_1/name = "air"
+input_1/auto_advance = false
+
+[sub_resource type="AnimationNodeTransition" id=19]
+input_count = 2
+input_0/name = "idle"
+input_0/auto_advance = false
+input_1/name = "run"
+input_1/auto_advance = false
+
+[sub_resource type="AnimationNodeTimeScale" id=20]
+
+[sub_resource type="AnimationNodeBlendTree" id=21]
+graph_offset = Vector2( -130, 113 )
+nodes/Animation/node = SubResource( 16 )
+nodes/Animation/position = Vector2( -200, 160 )
+"nodes/Animation 2/node" = SubResource( 13 )
+"nodes/Animation 2/position" = Vector2( -380, 280 )
+"nodes/Animation 3/node" = SubResource( 14 )
+"nodes/Animation 3/position" = Vector2( 0, 340 )
+"nodes/Animation 4/node" = SubResource( 15 )
+"nodes/Animation 4/position" = Vector2( 0, 480 )
+nodes/in_air/node = SubResource( 17 )
+nodes/in_air/position = Vector2( 220, 320 )
+nodes/in_air_state/node = SubResource( 18 )
+nodes/in_air_state/position = Vector2( 400, 160 )
+nodes/movement/node = SubResource( 19 )
+nodes/movement/position = Vector2( 0, 160 )
+nodes/movement_time/node = SubResource( 20 )
+nodes/movement_time/position = Vector2( -200, 280 )
+nodes/output/position = Vector2( 600, 160 )
+node_connections = [ "output", 0, "in_air_state", "in_air", 0, "Animation 3", "in_air", 1, "Animation 4", "in_air_state", 0, "movement", "in_air_state", 1, "in_air", "movement", 0, "Animation", "movement", 1, "movement_time", "movement_time", 0, "Animation 2" ]
+
+[sub_resource type="RectangleShape2D" id=22]
+extents = Vector2( 227.88, 14.9582 )
+
+[node name="Node2D" type="Node2D"]
+
+[node name="Node2D_background" type="Node2D" parent="."]
+
+[node name="Sprite_background" type="Sprite" parent="Node2D_background"]
+position = Vector2( 1934.59, 75.4455 )
+scale = Vector2( 8.20474, 8.20474 )
+texture = ExtResource( 2 )
+
+[node name="scroll_bg_cloud_1" type="Sprite" parent="Node2D_background"]
+position = Vector2( 341.447, -384.41 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_10" type="Sprite" parent="Node2D_background"]
+position = Vector2( -242.893, -519.257 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_16" type="Sprite" parent="Node2D_background"]
+position = Vector2( -357.384, 138.505 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_2" type="Sprite" parent="Node2D_background"]
+position = Vector2( 766.966, -651.108 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_3" type="Sprite" parent="Node2D_background"]
+position = Vector2( 1225.45, -917.807 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_11" type="Sprite" parent="Node2D_background"]
+position = Vector2( 446.459, -1252.3 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_12" type="Sprite" parent="Node2D_background"]
+position = Vector2( 1313, -1571.08 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_13" type="Sprite" parent="Node2D_background"]
+position = Vector2( 2166.07, -1483.53 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_14" type="Sprite" parent="Node2D_background"]
+position = Vector2( 3093.22, -1360.06 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_15" type="Sprite" parent="Node2D_background"]
+position = Vector2( 3605.07, -1016.58 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_4" type="Sprite" parent="Node2D_background"]
+position = Vector2( 1543.09, -582.186 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_5" type="Sprite" parent="Node2D_background"]
+position = Vector2( 1956.62, -744.003 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_6" type="Sprite" parent="Node2D_background"]
+position = Vector2( 2187.36, -420.369 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_7" type="Sprite" parent="Node2D_background"]
+position = Vector2( 2469.04, -782.96 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_8" type="Sprite" parent="Node2D_background"]
+position = Vector2( 3071.36, -675.081 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="scroll_bg_cloud_9" type="Sprite" parent="Node2D_background"]
+position = Vector2( 3466.92, -477.305 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 3 )
+
+[node name="KinematicBody2D" type="KinematicBody2D" parent="."]
+position = Vector2( 49.4442, -43.4509 )
+scale = Vector2( 4, 4 )
+script = SubResource( 1 )
+
+[node name="Sprite" type="Sprite" parent="KinematicBody2D"]
+position = Vector2( 3.67892, 0 )
+texture = ExtResource( 1 )
+vframes = 2
+hframes = 16
+frame = 21
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="KinematicBody2D"]
+anims/crouch = SubResource( 2 )
+anims/falling = SubResource( 3 )
+anims/falling_weapon = SubResource( 4 )
+anims/idle = SubResource( 5 )
+anims/idle_weapon = SubResource( 6 )
+anims/jumping = SubResource( 7 )
+anims/jumping_weapon = SubResource( 8 )
+anims/run = SubResource( 9 )
+anims/run_weapon = SubResource( 10 )
+anims/standing_weapon_ready = SubResource( 11 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="KinematicBody2D"]
+position = Vector2( -7.62939e-06, 0 )
+shape = SubResource( 12 )
+
+[node name="Camera2D" type="Camera2D" parent="KinematicBody2D"]
+position = Vector2( -7.62939e-06, -0.105112 )
+current = true
+
+[node name="AnimationTree" type="AnimationTree" parent="KinematicBody2D"]
+tree_root = SubResource( 21 )
+anim_player = NodePath("../AnimationPlayer")
+active = true
+parameters/in_air/current = 0
+parameters/in_air_state/current = 1
+parameters/movement/current = 1
+parameters/movement_time/scale = 0.93
+
+[node name="RayCast2D" type="RayCast2D" parent="KinematicBody2D"]
+enabled = true
+cast_to = Vector2( 0, 20 )
+
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+position = Vector2( 214.39, 79.6948 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D"]
+shape = SubResource( 22 )
+
+[node name="StaticBody2D2" type="StaticBody2D" parent="."]
+position = Vector2( 911.073, -184.011 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D2"]
+shape = SubResource( 22 )
+
+[node name="StaticBody2D3" type="StaticBody2D" parent="."]
+position = Vector2( 1445.61, -30.7766 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D3"]
+shape = SubResource( 22 )
+
+[node name="StaticBody2D4" type="StaticBody2D" parent="."]
+position = Vector2( 2142.3, 106.422 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D4"]
+shape = SubResource( 22 )
+
+[node name="StaticBody2D5" type="StaticBody2D" parent="."]
+position = Vector2( 2778.4, -185.793 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D5"]
+shape = SubResource( 22 )
